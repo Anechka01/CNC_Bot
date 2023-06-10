@@ -2,13 +2,22 @@ import datetime as datetime
 import json
 
 from database import *
+import database as db
 from sqlalchemy.orm import Session
-from fastapi import Depends, FastAPI, Body
+from fastapi import Depends, FastAPI, Body, APIRouter, status
+from fastapi.requests import Request
 from fastapi.responses import JSONResponse, FileResponse
 
 # создаем таблицы
-Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=db.engine)
 app = FastAPI()
+
+def foo():
+    pass
+
+
+app.add_event_handler('start', foo)
+app.add_event_handler('end', foo)
 
 
 # определяем зависимость
@@ -60,11 +69,31 @@ def create_machine(data=Body(),  db: Session = Depends(get_db)):
             db.refresh(machine)
     return "Successful create list of machine"
 
+
+@app.post("/api/machine2")
+async def create_machine(request=Request,  db: Session = Depends(get_db)):
+    data = await request.json()
+    for k, v in data.items():
+        for i, j in v.items():
+            machine = Machine(type=k, name=i, settings=j)
+            db.add(machine)
+            db.commit()
+            db.refresh(machine)
+    return "Successful create list of machine"
+
 @app.get("/api/machine")
 def get_machine(name: str = "", db: Session = Depends(get_db)):
     if name:
         return db.query(Machine).filter(Machine.name == name).first()
     return db.query(Machine).all()
+
+# @app.get("/api/machine")
+# def get_machine(db: Session = Depends(get_db)):
+#     return db.query(Machine).all()
+#
+# @app.get("/api/machine/{name}")
+# def get_machine(name: str = "", db: Session = Depends(get_db)):
+#     return db.query(Machine).filter(Machine.name == name).first()
 
 
 @app.get("/api/auth")
@@ -75,7 +104,7 @@ def varify_psw(uid: int, password: str, db: Session = Depends(get_db)):
     return False
 
 
-@app.post("/api/setting")
+@app.post("/api/setting", response_model=JSONResponse)
 def set_setting(data=Body(), db: Session = Depends(get_db)):
     uid = data["uid"]
     settings = data["settings"]
@@ -86,8 +115,7 @@ def set_setting(data=Body(), db: Session = Depends(get_db)):
     db.add(setting)
     db.commit()
     db.refresh(setting)
-
-    return "Success process"
+    return JSONResponse("Success process", status_code=status.HTTP_200_OK)
 #
 #
 # @app.put("/api/users")

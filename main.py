@@ -91,11 +91,14 @@ def get_password(message, user_name, user_last_name):
     user_password = message.text.strip()
     user_id = message.from_user.id
     response = requests.post(HOST + f"/api/users?firstname={user_name}&surname={user_last_name}&telegram_id={user_id}&password={user_password}")
+    # requests.post('', params=[('firstname', user_name), ('firstname', user_name), ('firstname', user_name),])
 
-    if response.json():
-        bot.send_message(message.chat.id, 'Вход выполнен')
-        success_enter(message)
-
+    try:
+        if response.json():
+            bot.send_message(message.chat.id, 'Вход выполнен')
+            success_enter(message)
+    except requests.JSONDecodeError:
+        print("*"*50, response.text)
 
 def user_pass(message, count=3):
     user_password = message.text
@@ -150,12 +153,14 @@ def type_of_machine(callback):
 def set_machine(message, settings, id_machine):
     global dct
     if settings:
+        print('!', settings)
         bot.send_message(message.chat.id, f'Введите {settings[0]}')
         param1 = message.text
         dct[settings[0]] = param1
         del settings[0]
         bot.register_next_step_handler(message, set_machine, settings, id_machine)
     else:
+        print('!!')
         data = {
             "uid": message.from_user.id,
             "settings": json.dumps(dct),
@@ -188,6 +193,7 @@ def lathe_model(callback):
         post_settings(callback)
 
 
+
 @bot.callback_query_handler(func=lambda callback: callback.data in ["2с108п", "B1825G", "2М112", "ГС520"])
 def drilling_model(callback):
     bot.answer_callback_query(callback_query_id=callback.id)
@@ -209,4 +215,4 @@ def milling_model(callback):
         post_settings(callback)
 
 
-bot.polling(none_stop=True)
+bot.polling(none_stop=True, timeout=60)

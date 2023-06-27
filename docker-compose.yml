@@ -1,0 +1,25 @@
+version: "3.8"
+services:
+
+    app:
+        build:
+            context: .
+            dockerfile: app/Dockerfile
+        environment:
+            file_env: .env
+        image: app
+        networks:
+            - microservices
+        ports:
+            - 8000:8000
+    bot:
+        build:
+            context: .
+            dockerfile: botPack/Dockerfile
+        image: bot
+        networks:
+            - microservices
+
+
+networks:
+    microservices:
